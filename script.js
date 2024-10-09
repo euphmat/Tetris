@@ -26,6 +26,8 @@ const COLORS = [
 let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 let currentPiece = null;
 let currentPosition = {x: 0, y: 0};
+let gameInterval = null;
+const GAME_SPEED = 1000; // ゲームスピードを1秒（1000ミリ秒）に設定
 
 function createPiece() {
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
@@ -102,11 +104,7 @@ function rotate(piece) {
     return { shape: newShape, color: piece.color };
 }
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBoard();
-    drawPiece();
-
+function update() {
     if (!isValidMove(currentPiece, {x: currentPosition.x, y: currentPosition.y + 1})) {
         merge();
         clearLines();
@@ -115,29 +113,49 @@ function gameLoop() {
         if (!isValidMove(currentPiece, currentPosition)) {
             alert('Game Over!');
             board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+            startGame(); // ゲームを再スタート
         }
     } else {
         currentPosition.y++;
     }
+}
 
-    requestAnimationFrame(gameLoop);
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBoard();
+    drawPiece();
+}
+
+function gameLoop() {
+    update();
+    draw();
+}
+
+function startGame() {
+    currentPiece = createPiece();
+    currentPosition = {x: Math.floor(COLS / 2) - 1, y: 0};
+    clearInterval(gameInterval);
+    gameInterval = setInterval(gameLoop, GAME_SPEED);
 }
 
 document.getElementById('left-btn').addEventListener('click', () => {
     if (isValidMove(currentPiece, {x: currentPosition.x - 1, y: currentPosition.y})) {
         currentPosition.x--;
+        draw();
     }
 });
 
 document.getElementById('right-btn').addEventListener('click', () => {
     if (isValidMove(currentPiece, {x: currentPosition.x + 1, y: currentPosition.y})) {
         currentPosition.x++;
+        draw();
     }
 });
 
 document.getElementById('down-btn').addEventListener('click', () => {
     if (isValidMove(currentPiece, {x: currentPosition.x, y: currentPosition.y + 1})) {
         currentPosition.y++;
+        draw();
     }
 });
 
@@ -145,9 +163,8 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
     let rotated = rotate(currentPiece);
     if (isValidMove(rotated, currentPosition)) {
         currentPiece = rotated;
+        draw();
     }
 });
 
-currentPiece = createPiece();
-currentPosition = {x: Math.floor(COLS / 2) - 1, y: 0};
-gameLoop();
+startGame();
