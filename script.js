@@ -1,4 +1,4 @@
-const VERSION = 'v0.11 ダイナマイト追加';
+const VERSION = 'v0.12 ドラえもんを 4x4 配置すると何かが起こる';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
@@ -41,7 +41,7 @@ function createPiece() {
         return { shape: [[1]], color: 'bomb' };
     } else if (random < 0.14) {  // 8% の確率でダイヤモンドを生成
         return { shape: [[1]], color: 'diamond' };
-    } else if (random < 0.89) {  // 5% の確率でドラえもんを生成
+    } else if (random < 0.19) {  // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
