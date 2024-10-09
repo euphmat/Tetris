@@ -6,10 +6,7 @@ const retryBtn = document.getElementById('retry-btn');
 
 const ROWS = 20;
 const COLS = 10;
-const BLOCK_SIZE = 30;
-
-canvas.width = COLS * BLOCK_SIZE;
-canvas.height = ROWS * BLOCK_SIZE;
+let BLOCK_SIZE;
 
 let board = createBoard();
 let currentPiece = null;
@@ -158,6 +155,19 @@ function gameStart() {
     }, 500);
 }
 
+function resizeCanvas() {
+    const container = document.getElementById('game-container');
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    canvas.width = containerWidth;
+    canvas.height = containerHeight;
+    
+    BLOCK_SIZE = Math.floor(containerWidth / COLS);
+    
+    draw();
+}
+
 document.getElementById('left-btn').addEventListener('click', () => {
     moveLeft();
     draw();
@@ -181,6 +191,19 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
 startScreen.addEventListener('click', gameStart);
 retryBtn.addEventListener('click', gameStart);
 
+window.addEventListener('resize', resizeCanvas);
+
+document.body.addEventListener('touchstart', function(e) {
+    if (e.target.nodeName !== 'BUTTON') {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+document.body.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+}, { passive: false });
+
 // 初期画面表示
 startScreen.style.display = 'flex';
 gameOverScreen.style.display = 'none';
+resizeCanvas();
