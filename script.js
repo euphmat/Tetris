@@ -1,6 +1,7 @@
+const VERSION = 'v0.02';
+
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
-const VERSION = 'v0.01';
 
 const ROWS = 20;
 const COLS = 10;
@@ -19,10 +20,6 @@ const SHAPES = [
     [[0, 1, 1], [1, 1, 0]]
 ];
 
-window.onload = function() {
-    document.getElementById('version').textContent = VERSION;
-};
-
 const COLORS = [
     '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF',
     '#FF8E0D', '#FFE138', '#3877FF'
@@ -32,9 +29,14 @@ let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 let currentPiece = null;
 let currentPosition = {x: 0, y: 0};
 let gameInterval = null;
-const GAME_SPEED = 400; // ゲームスピードを1秒（1000ミリ秒）に設定
+const GAME_SPEED = 1000;
+
+const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
+    if (Math.random() < 0.3) {  // 30% の確率でドラえもんを生成
+        return { shape: [[1]], color: 'doraemon' };
+    }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
     const color = COLORS[shapeIndex];
     const shape = SHAPES[shapeIndex];
@@ -45,10 +47,14 @@ function drawBoard() {
     board.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                ctx.fillStyle = COLORS[value - 1];
-                ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = '#000';
-                ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                if (value === 'doraemon') {
+                    ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                } else {
+                    ctx.fillStyle = COLORS[value - 1];
+                    ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    ctx.strokeStyle = '#000';
+                    ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                }
             }
         });
     });
@@ -58,10 +64,14 @@ function drawPiece() {
     currentPiece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                ctx.fillStyle = currentPiece.color;
-                ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = '#000';
-                ctx.strokeRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                if (currentPiece.color === 'doraemon') {
+                    ctx.drawImage(doraemonImg, (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                } else {
+                    ctx.fillStyle = currentPiece.color;
+                    ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    ctx.strokeStyle = '#000';
+                    ctx.strokeRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                }
             }
         });
     });
@@ -71,7 +81,7 @@ function merge() {
     currentPiece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                board[currentPosition.y + y][currentPosition.x + x] = COLORS.indexOf(currentPiece.color) + 1;
+                board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color === 'doraemon' ? 'doraemon' : COLORS.indexOf(currentPiece.color) + 1;
             }
         });
     });
@@ -118,7 +128,7 @@ function update() {
         if (!isValidMove(currentPiece, currentPosition)) {
             alert('Game Over!');
             board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-            startGame(); // ゲームを再スタート
+            startGame();
         }
     } else {
         currentPosition.y++;
@@ -172,4 +182,7 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
     }
 });
 
-startGame();
+window.onload = function() {
+    document.getElementById('version').textContent = VERSION;
+    startGame();
+};
