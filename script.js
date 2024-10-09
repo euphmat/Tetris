@@ -1,4 +1,4 @@
-const VERSION = 'v0.12 ドラえもんを 4x4 配置すると何かが起こる';
+const VERSION = 'v0.12 ドラえもんを 2x2 配置すると何かが起こる';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
