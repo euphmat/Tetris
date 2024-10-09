@@ -41,7 +41,7 @@ function createPiece() {
         return { shape: [[1]], color: 'bomb' };
     } else if (random < 0.14) {  // 8% の確率でダイヤモンドを生成
         return { shape: [[1]], color: 'diamond' };
-    } else if (random < 0.19) {  // 5% の確率でドラえもんを生成
+    } else if (random < 0.89) {  // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
@@ -51,29 +51,31 @@ function createPiece() {
 }
 
 function drawBoard() {
-    board.forEach((row, y) => {
-        row.forEach((value, x) => {
-            if (value) {
-                if (value === 'doraemon') {
-                    ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                } else if (value === 'bomb') {
-                    ctx.font = `${BLOCK_SIZE}px Arial`;
-                    ctx.fillText('💣', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-                } else if (value === 'diamond') {
-                    ctx.font = `${BLOCK_SIZE}px Arial`;
-                    ctx.fillText('💎', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-                } else if (value === 'dynamite') {
-                    ctx.font = `${BLOCK_SIZE}px Arial`;
-                    ctx.fillText('🧨', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-                } else {
-                    ctx.fillStyle = value;
-                    ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                    ctx.strokeStyle = '#000';
-                    ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                }
-            }
-        });
+  board.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value) {
+        if (value === 'doraemon') {
+          ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        } else if (value === 'bigDoraemon') {
+          ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE * 2, BLOCK_SIZE * 2);
+        } else if (value === 'bomb') {
+          ctx.font = `${BLOCK_SIZE}px Arial`;
+          ctx.fillText('💣', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+        } else if (value === 'diamond') {
+          ctx.font = `${BLOCK_SIZE}px Arial`;
+          ctx.fillText('💎', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+        } else if (value === 'dynamite') {
+          ctx.font = `${BLOCK_SIZE}px Arial`;
+          ctx.fillText('🧨', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+        } else {
+          ctx.fillStyle = value;
+          ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          ctx.strokeStyle = '#000';
+          ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        }
+      }
     });
+  });
 }
 
 function drawPiece() {
@@ -103,19 +105,20 @@ function drawPiece() {
 }
 
 function merge() {
-    currentPiece.shape.forEach((row, y) => {
-        row.forEach((value, x) => {
-            if (value) {
-                if (currentPiece.color === 'bomb') {
-                    explodeBomb(currentPosition.x + x, currentPosition.y + y);
-                } else if (currentPiece.color === 'dynamite') {
-                    explodeDynamite(currentPosition.x + x, currentPosition.y + y);
-                } else {
-                    board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
-                }
-            }
-        });
+  currentPiece.shape.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value) {
+        if (currentPiece.color === 'bomb') {
+          explodeBomb(currentPosition.x + x, currentPosition.y + y);
+        } else if (currentPiece.color === 'dynamite') {
+          explodeDynamite(currentPosition.x + x, currentPosition.y + y);
+        } else {
+          board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
+        }
+      }
     });
+  });
+  checkAndExpandDoraemon(); // 新しく追加
 }
 
 function explodeBomb(bombX, bombY) {
@@ -171,23 +174,23 @@ function isValidMove(piece, position) {
 }
 
 function clearLines() {
-    let linesCleared = 0;
-    outer: for (let y = ROWS - 1; y >= 0; y--) {
-        for (let x = 0; x < COLS; x++) {
-            if (board[y][x] === 0 || board[y][x] === 'diamond') continue outer;
-        }
-        const newRow = Array(COLS).fill(0);
-        for (let x = 0; x < COLS; x++) {
-            if (board[y][x] === 'diamond') {
-                newRow[x] = 'diamond';
-            }
-        }
-        board.splice(y, 1);
-        board.unshift(newRow);
-        linesCleared++;
-        y++;
+  let linesCleared = 0;
+  outer: for (let y = ROWS - 1; y >= 0; y--) {
+    for (let x = 0; x < COLS; x++) {
+      if (board[y][x] === 0 || board[y][x] === 'diamond' || board[y][x] === 'bigDoraemon') continue outer;
     }
-    return linesCleared;
+    const newRow = Array(COLS).fill(0);
+    for (let x = 0; x < COLS; x++) {
+      if (board[y][x] === 'diamond') {
+        newRow[x] = 'diamond';
+      }
+    }
+    board.splice(y, 1);
+    board.unshift(newRow);
+    linesCleared++;
+    y++;
+  }
+  return linesCleared;
 }
 
 function rotate(piece) {
@@ -277,6 +280,25 @@ function startGame() {
     currentPosition = {x: Math.floor(COLS / 2) - 1, y: 0};
     clearInterval(gameInterval);
     gameInterval = setInterval(gameLoop, GAME_SPEED);
+}
+
+function checkAndExpandDoraemon() {
+  for (let y = 0; y < ROWS - 1; y++) {
+    for (let x = 0; x < COLS - 1; x++) {
+      if (
+        board[y][x] === 'doraemon' &&
+        board[y][x + 1] === 'doraemon' &&
+        board[y + 1][x] === 'doraemon' &&
+        board[y + 1][x + 1] === 'doraemon'
+      ) {
+        // 2x2のドラえもンブロックを見つけた場合、拡大する
+        board[y][x] = 'bigDoraemon';
+        board[y][x + 1] = 0;
+        board[y + 1][x] = 0;
+        board[y + 1][x + 1] = 0;
+      }
+    }
+  }
 }
 
 document.getElementById('left-btn').addEventListener('click', () => {
