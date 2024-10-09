@@ -27,7 +27,7 @@ let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 let currentPiece = null;
 let currentPosition = {x: 0, y: 0};
 let gameInterval = null;
-const GAME_SPEED = 1000; // ゲームスピードを1秒（1000ミリ秒）に設定
+const GAME_SPEED = 400; // ゲームスピードを1秒（1000ミリ秒）に設定
 
 function createPiece() {
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
