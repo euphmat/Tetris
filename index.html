@@ -2,15 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ブラウザテトリス</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <div id="start-screen" class="overlay">
-            <div class="overlay-content">Tap to Start</div>
-        </div>
         <canvas id="tetris-canvas"></canvas>
         <div id="controls">
             <button id="left-btn">←</button>
@@ -18,11 +15,12 @@
             <button id="right-btn">→</button>
             <button id="rotate-btn">回転</button>
         </div>
-        <div id="game-over-screen" class="overlay">
-            <div class="overlay-content">
-                Game Over
-                <button id="retry-btn">Retry?</button>
-            </div>
+        <div id="start-screen">
+            <p>Tap to Start</p>
+        </div>
+        <div id="game-over-screen" class="hidden">
+            <p>Game Over</p>
+            <button id="retry-btn">Retry?</button>
         </div>
     </div>
     <script src="script.js"></script>

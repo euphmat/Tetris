@@ -6,7 +6,10 @@ const retryBtn = document.getElementById('retry-btn');
 
 const ROWS = 20;
 const COLS = 10;
-let BLOCK_SIZE;
+const BLOCK_SIZE = 30;
+
+canvas.width = COLS * BLOCK_SIZE;
+canvas.height = ROWS * BLOCK_SIZE;
 
 let board = createBoard();
 let currentPiece = null;
@@ -34,7 +37,7 @@ function drawBoard() {
             if (value) {
                 ctx.fillStyle = COLORS[value - 1];
                 ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = 'black';
+                ctx.strokeStyle = '#000';
                 ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
         });
@@ -46,7 +49,7 @@ function createPiece() {
     const shape = SHAPES[shapeIndex];
     return {
         shape,
-        color: shapeIndex + 1,
+        color: COLORS[shapeIndex],
         x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2),
         y: 0
     };
@@ -56,9 +59,9 @@ function drawPiece() {
     currentPiece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                ctx.fillStyle = COLORS[currentPiece.color - 1];
+                ctx.fillStyle = currentPiece.color;
                 ctx.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = 'black';
+                ctx.strokeStyle = '#000';
                 ctx.strokeRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
             }
         });
@@ -69,7 +72,7 @@ function moveDown() {
     currentPiece.y++;
     if (collision()) {
         currentPiece.y--;
-        mergePiece();
+        merge();
         removeRows();
         currentPiece = createPiece();
         if (collision()) {
@@ -96,114 +99,92 @@ function rotate() {
     const rotated = currentPiece.shape[0].map((_, i) =>
         currentPiece.shape.map(row => row[i]).reverse()
     );
-    const prevShape = currentPiece.shape;
+    const previousShape = currentPiece.shape;
     currentPiece.shape = rotated;
     if (collision()) {
-        currentPiece.shape = prevShape;
+        currentPiece.shape = previousShape;
     }
 }
 
 function collision() {
     return currentPiece.shape.some((row, dy) =>
         row.some((value, dx) =>
-            value && (
-                currentPiece.y + dy >= ROWS ||
-                currentPiece.x + dx < 0 ||
-                currentPiece.x + dx >= COLS ||
-                board[currentPiece.y + dy][currentPiece.x + dx]
-            )
+            value &&
+            (currentPiece.y + dy >= ROWS ||
+             currentPiece.x + dx < 0 ||
+             currentPiece.x + dx >= COLS ||
+             board[currentPiece.y + dy][currentPiece.x + dx])
         )
     );
 }
 
-function mergePiece() {
+function merge() {
     currentPiece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                board[currentPiece.y + y][currentPiece.x + x] = currentPiece.color;
+                board[currentPiece.y + y][currentPiece.x + x] = COLORS.indexOf(currentPiece.color) + 1;
             }
         });
     });
 }
 
 function removeRows() {
-    const newBoard = board.filter(row => row.some(cell => !cell));
-    const removedRows = ROWS - newBoard.length;
-    const newRows = Array.from({ length: removedRows }, () => Array(COLS).fill(0));
-    board = [...newRows, ...newBoard];
+    let rowsToRemove = [];
+    board.forEach((row, y) => {
+        if (row.every(value => value !== 0)) {
+            rowsToRemove.push(y);
+        }
+    });
+    rowsToRemove.forEach(y => {
+        board.splice(y, 1);
+        board.unshift(Array(COLS).fill(0));
+    });
 }
 
 function gameOver() {
     clearInterval(gameLoop);
-    gameOverScreen.style.display = 'flex';
+    gameOverScreen.classList.remove('hidden');
 }
 
-function draw() {
+function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBoard();
     drawPiece();
 }
 
-function gameStart() {
+function startGame() {
     board = createBoard();
     currentPiece = createPiece();
-    startScreen.style.display = 'none';
-    gameOverScreen.style.display = 'none';
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
     gameLoop = setInterval(() => {
         moveDown();
-        draw();
+        update();
     }, 500);
-}
-
-function resizeCanvas() {
-    const container = document.getElementById('game-container');
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    
-    canvas.width = containerWidth;
-    canvas.height = containerHeight;
-    
-    BLOCK_SIZE = Math.floor(containerWidth / COLS);
-    
-    draw();
 }
 
 document.getElementById('left-btn').addEventListener('click', () => {
     moveLeft();
-    draw();
+    update();
 });
 
 document.getElementById('right-btn').addEventListener('click', () => {
     moveRight();
-    draw();
+    update();
 });
 
 document.getElementById('down-btn').addEventListener('click', () => {
     moveDown();
-    draw();
+    update();
 });
 
 document.getElementById('rotate-btn').addEventListener('click', () => {
     rotate();
-    draw();
+    update();
 });
 
-startScreen.addEventListener('click', gameStart);
-retryBtn.addEventListener('click', gameStart);
+startScreen.addEventListener('click', startGame);
+retryBtn.addEventListener('click', startGame);
 
-window.addEventListener('resize', resizeCanvas);
-
-document.body.addEventListener('touchstart', function(e) {
-    if (e.target.nodeName !== 'BUTTON') {
-        e.preventDefault();
-    }
-}, { passive: false });
-
-document.body.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-}, { passive: false });
-
-// 初期画面表示
-startScreen.style.display = 'flex';
-gameOverScreen.style.display = 'none';
-resizeCanvas();
+// 初期表示
+update();
