@@ -1,4 +1,4 @@
-const VERSION = 'v0.05';
+const VERSION = 'v0.06 fix touch-action manipulation';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
