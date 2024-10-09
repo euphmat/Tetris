@@ -1,4 +1,4 @@
-const VERSION = 'v0.03';
+const VERSION = 'v0.04 ドラえもん削除';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
@@ -34,7 +34,7 @@ const GAME_SPEED = 500;
 const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
-    if (Math.random() < 0.3) {  // 30% の確率でドラえもんを生成
+    if (Math.random() < 0.9) {  // 30% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
