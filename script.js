@@ -1,9 +1,9 @@
-const VERSION = 'v0.08 爆弾実装';
+const VERSION = 'v0.10 回転ロジック修正';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
 
-const ROWS = 20;
+const ROWS = 18; // 20から18に減らしました
 const COLS = 10;
 const BLOCK_SIZE = 30;
 
@@ -35,9 +35,11 @@ const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
     const random = Math.random();
-    if (random < 0.25) {  // 5% の確率で爆弾を生成
+    if (random < 0.05) {  // 5% の確率で爆弾を生成
         return { shape: [[1]], color: 'bomb' };
-    } else if (random < 0.35) {  // 30% の確率でドラえもんを生成
+    } else if (random < 0.13) {  // 8% の確率でダイヤモンドを生成
+        return { shape: [[1]], color: 'diamond' };
+    } else if (random < 0.18) {  // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
@@ -55,8 +57,11 @@ function drawBoard() {
                 } else if (value === 'bomb') {
                     ctx.font = `${BLOCK_SIZE}px Arial`;
                     ctx.fillText('💣', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+                } else if (value === 'diamond') {
+                    ctx.font = `${BLOCK_SIZE}px Arial`;
+                    ctx.fillText('💎', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
                 } else {
-                    ctx.fillStyle = COLORS[value - 1];
+                    ctx.fillStyle = value;
                     ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                     ctx.strokeStyle = '#000';
                     ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -75,6 +80,9 @@ function drawPiece() {
                 } else if (currentPiece.color === 'bomb') {
                     ctx.font = `${BLOCK_SIZE}px Arial`;
                     ctx.fillText('💣', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
+                } else if (currentPiece.color === 'diamond') {
+                    ctx.font = `${BLOCK_SIZE}px Arial`;
+                    ctx.fillText('💎', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
                 } else {
                     ctx.fillStyle = currentPiece.color;
                     ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -93,7 +101,7 @@ function merge() {
                 if (currentPiece.color === 'bomb') {
                     explodeBomb(currentPosition.x + x, currentPosition.y + y);
                 } else {
-                    board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color === 'doraemon' ? 'doraemon' : COLORS.indexOf(currentPiece.color) + 1;
+                    board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
                 }
             }
         });
@@ -101,23 +109,37 @@ function merge() {
 }
 
 function explodeBomb(bombX, bombY) {
-    // 爆発エフェクトを表示
-    ctx.font = `${BLOCK_SIZE}px Arial`;
-    ctx.fillText('💥', bombX * BLOCK_SIZE, (bombY + 1) * BLOCK_SIZE);
+    animateExplosion(bombX, bombY);
+}
 
-    // 周囲3x3マスのブロックを削除
-    for (let y = bombY - 1; y <= bombY + 1; y++) {
-        for (let x = bombX - 1; x <= bombX + 1; x++) {
-            if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
-                board[y][x] = 0;
+function animateExplosion(bombX, bombY) {
+    const explosionFrames = ['💥', '🔥', '💨', '✨'];
+    let frameIndex = 0;
+
+    function drawExplosionFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+
+        ctx.font = `${BLOCK_SIZE}px Arial`;
+        ctx.fillText(explosionFrames[frameIndex], bombX * BLOCK_SIZE, (bombY + 1) * BLOCK_SIZE);
+
+        frameIndex++;
+
+        if (frameIndex < explosionFrames.length) {
+            setTimeout(drawExplosionFrame, 100);
+        } else {
+            for (let y = bombY - 1; y <= bombY + 1; y++) {
+                for (let x = bombX - 1; x <= bombX + 1; x++) {
+                    if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                        board[y][x] = 0;
+                    }
+                }
             }
+            draw();
         }
     }
 
-    // 爆発エフェクトを一時的に表示
-    setTimeout(() => {
-        draw();
-    }, 200);
+    drawExplosionFrame();
 }
 
 function isValidMove(piece, position) {
@@ -137,10 +159,16 @@ function clearLines() {
     let linesCleared = 0;
     outer: for (let y = ROWS - 1; y >= 0; y--) {
         for (let x = 0; x < COLS; x++) {
-            if (board[y][x] === 0) continue outer;
+            if (board[y][x] === 0 || board[y][x] === 'diamond') continue outer;
+        }
+        const newRow = Array(COLS).fill(0);
+        for (let x = 0; x < COLS; x++) {
+            if (board[y][x] === 'diamond') {
+                newRow[x] = 'diamond';
+            }
         }
         board.splice(y, 1);
-        board.unshift(Array(COLS).fill(0));
+        board.unshift(newRow);
         linesCleared++;
         y++;
     }
@@ -148,8 +176,56 @@ function clearLines() {
 }
 
 function rotate(piece) {
+    if (piece.shape.length === 1 && piece.shape[0].length === 4) {
+        return {
+            shape: [[1], [1], [1], [1]],
+            color: piece.color
+        };
+    } else if (piece.shape.length === 4 && piece.shape[0].length === 1) {
+        return {
+            shape: [[1, 1, 1, 1]],
+            color: piece.color
+        };
+    }
     let newShape = piece.shape[0].map((_, i) => piece.shape.map(row => row[i])).reverse();
     return { shape: newShape, color: piece.color };
+}
+
+function tryRotate() {
+    let rotated = rotate(currentPiece);
+    let kick = 0;
+    let maxKick = currentPiece.shape[0].length === 4 || currentPiece.shape.length === 4 ? 3 : 2;
+
+    if (isValidMove(rotated, currentPosition)) {
+        currentPiece = rotated;
+        return;
+    }
+
+    for (kick = 1; kick <= maxKick; kick++) {
+        if (isValidMove(rotated, {x: currentPosition.x - kick, y: currentPosition.y})) {
+            currentPiece = rotated;
+            currentPosition.x -= kick;
+            return;
+        }
+        if (isValidMove(rotated, {x: currentPosition.x + kick, y: currentPosition.y})) {
+            currentPiece = rotated;
+            currentPosition.x += kick;
+            return;
+        }
+    }
+
+    if (maxKick === 3) {
+        if (isValidMove(rotated, {x: currentPosition.x, y: currentPosition.y - 1})) {
+            currentPiece = rotated;
+            currentPosition.y -= 1;
+            return;
+        }
+        if (isValidMove(rotated, {x: currentPosition.x, y: currentPosition.y - 2})) {
+            currentPiece = rotated;
+            currentPosition.y -= 2;
+            return;
+        }
+    }
 }
 
 function update() {
@@ -210,51 +286,9 @@ document.getElementById('down-btn').addEventListener('click', () => {
 });
 
 document.getElementById('rotate-btn').addEventListener('click', () => {
-    let rotated = rotate(currentPiece);
-    if (isValidMove(rotated, currentPosition)) {
-        currentPiece = rotated;
-        draw();
-    }
+    tryRotate();
+    draw();
 });
-
-function explodeBomb(bombX, bombY) {
-    animateExplosion(bombX, bombY);
-}
-
-function animateExplosion(bombX, bombY) {
-    const explosionFrames = ['💥', '🔥', '💨', '✨'];
-    let frameIndex = 0;
-
-    function drawExplosionFrame() {
-        // クリアして再描画
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBoard();
-
-        // 爆発エフェクトを描画
-        ctx.font = `${BLOCK_SIZE}px Arial`;
-        ctx.fillText(explosionFrames[frameIndex], bombX * BLOCK_SIZE, (bombY + 1) * BLOCK_SIZE);
-
-        frameIndex++;
-
-        if (frameIndex < explosionFrames.length) {
-            // 次のフレームをアニメーション
-            setTimeout(drawExplosionFrame, 100);
-        } else {
-            // アニメーション終了後、ブロックを削除
-            for (let y = bombY - 1; y <= bombY + 1; y++) {
-                for (let x = bombX - 1; x <= bombX + 1; x++) {
-                    if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
-                        board[y][x] = 0;
-                    }
-                }
-            }
-            // 最終的な状態を描画
-            draw();
-        }
-    }
-
-    drawExplosionFrame();
-}
 
 window.onload = function() {
     document.getElementById('version').textContent = VERSION;
