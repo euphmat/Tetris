@@ -1,9 +1,9 @@
-const VERSION = 'v0.10 回転ロジック修正';
+const VERSION = 'v0.11 ダイナマイト追加';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
 
-const ROWS = 18; // 20から18に減らしました
+const ROWS = 18;
 const COLS = 10;
 const BLOCK_SIZE = 30;
 
@@ -29,17 +29,19 @@ let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 let currentPiece = null;
 let currentPosition = {x: 0, y: 0};
 let gameInterval = null;
-const GAME_SPEED = 300;
+const GAME_SPEED = 500;
 
 const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
     const random = Math.random();
-    if (random < 0.05) {  // 5% の確率で爆弾を生成
+    if (random < 0.01) {  // 1% の確率でダイナマイトを生成
+        return { shape: [[1]], color: 'dynamite' };
+    } else if (random < 0.06) {  // 5% の確率で爆弾を生成
         return { shape: [[1]], color: 'bomb' };
-    } else if (random < 0.13) {  // 8% の確率でダイヤモンドを生成
+    } else if (random < 0.14) {  // 8% の確率でダイヤモンドを生成
         return { shape: [[1]], color: 'diamond' };
-    } else if (random < 0.18) {  // 5% の確率でドラえもんを生成
+    } else if (random < 0.19) {  // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
@@ -60,6 +62,9 @@ function drawBoard() {
                 } else if (value === 'diamond') {
                     ctx.font = `${BLOCK_SIZE}px Arial`;
                     ctx.fillText('💎', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+                } else if (value === 'dynamite') {
+                    ctx.font = `${BLOCK_SIZE}px Arial`;
+                    ctx.fillText('🧨', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
                 } else {
                     ctx.fillStyle = value;
                     ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -83,6 +88,9 @@ function drawPiece() {
                 } else if (currentPiece.color === 'diamond') {
                     ctx.font = `${BLOCK_SIZE}px Arial`;
                     ctx.fillText('💎', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
+                } else if (currentPiece.color === 'dynamite') {
+                    ctx.font = `${BLOCK_SIZE}px Arial`;
+                    ctx.fillText('🧨', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
                 } else {
                     ctx.fillStyle = currentPiece.color;
                     ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -100,6 +108,8 @@ function merge() {
             if (value) {
                 if (currentPiece.color === 'bomb') {
                     explodeBomb(currentPosition.x + x, currentPosition.y + y);
+                } else if (currentPiece.color === 'dynamite') {
+                    explodeDynamite(currentPosition.x + x, currentPosition.y + y);
                 } else {
                     board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
                 }
@@ -112,7 +122,11 @@ function explodeBomb(bombX, bombY) {
     animateExplosion(bombX, bombY);
 }
 
-function animateExplosion(bombX, bombY) {
+function explodeDynamite(dynamiteX, dynamiteY) {
+    animateExplosion(dynamiteX, dynamiteY, true);
+}
+
+function animateExplosion(centerX, centerY, isDynamite = false) {
     const explosionFrames = ['💥', '🔥', '💨', '✨'];
     let frameIndex = 0;
 
@@ -121,15 +135,16 @@ function animateExplosion(bombX, bombY) {
         drawBoard();
 
         ctx.font = `${BLOCK_SIZE}px Arial`;
-        ctx.fillText(explosionFrames[frameIndex], bombX * BLOCK_SIZE, (bombY + 1) * BLOCK_SIZE);
+        ctx.fillText(explosionFrames[frameIndex], centerX * BLOCK_SIZE, (centerY + 1) * BLOCK_SIZE);
 
         frameIndex++;
 
         if (frameIndex < explosionFrames.length) {
             setTimeout(drawExplosionFrame, 100);
         } else {
-            for (let y = bombY - 1; y <= bombY + 1; y++) {
-                for (let x = bombX - 1; x <= bombX + 1; x++) {
+            const range = isDynamite ? 4 : 1;
+            for (let y = centerY - range; y <= centerY + range; y++) {
+                for (let x = centerX - range; x <= centerX + range; x++) {
                     if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
                         board[y][x] = 0;
                     }
@@ -231,7 +246,7 @@ function tryRotate() {
 function update() {
     if (!isValidMove(currentPiece, {x: currentPosition.x, y: currentPosition.y + 1})) {
         merge();
-        if (currentPiece.color !== 'bomb') {
+        if (currentPiece.color !== 'bomb' && currentPiece.color !== 'dynamite') {
             clearLines();
         }
         currentPiece = createPiece();
