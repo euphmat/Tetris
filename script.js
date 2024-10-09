@@ -1,6 +1,7 @@
 const VERSION = 'v0.12 ドラえもんを 2x2 配置すると何かが起こる';
 
 const canvas = document.getElementById('tetris-canvas');
+const crossBombImg = document.getElementById('crossBomb');
 const ctx = canvas.getContext('2d');
 
 const ROWS = 18;
@@ -35,15 +36,18 @@ const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
     const random = Math.random();
-    if (random < 0.01) {  // 1% の確率でダイナマイトを生成
+    if (random < 0.01) { // 1% の確率でダイナマイトを生成
         return { shape: [[1]], color: 'dynamite' };
-    } else if (random < 0.06) {  // 5% の確率で爆弾を生成
+    } else if (random < 0.06) { // 5% の確率で爆弾を生成
         return { shape: [[1]], color: 'bomb' };
-    } else if (random < 0.14) {  // 8% の確率でダイヤモンドを生成
+    } else if (random < 0.14) { // 8% の確率でダイヤモンドを生成
         return { shape: [[1]], color: 'diamond' };
-    } else if (random < 0.19) {  // 5% の確率でドラえもんを生成
+    } else if (random < 0.19) { // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
+    } else if (random < 0.24) { // 5% の確率で十文字爆弾を生成
+        return { shape: [[1]], color: 'crossBomb' };
     }
+
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
     const color = COLORS[shapeIndex];
     const shape = SHAPES[shapeIndex];
@@ -93,6 +97,8 @@ function drawPiece() {
                 } else if (currentPiece.color === 'dynamite') {
                     ctx.font = `${BLOCK_SIZE}px Arial`;
                     ctx.fillText('🧨', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
+                } else if (currentPiece.color === 'crossBomb') {
+                    ctx.drawImage(crossBombImg, (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
                 } else {
                     ctx.fillStyle = currentPiece.color;
                     ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -105,20 +111,22 @@ function drawPiece() {
 }
 
 function merge() {
-  currentPiece.shape.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value) {
-        if (currentPiece.color === 'bomb') {
-          explodeBomb(currentPosition.x + x, currentPosition.y + y);
-        } else if (currentPiece.color === 'dynamite') {
-          explodeDynamite(currentPosition.x + x, currentPosition.y + y);
-        } else {
-          board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
-        }
-      }
+    currentPiece.shape.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value) {
+                if (currentPiece.color === 'bomb') {
+                    explodeBomb(currentPosition.x + x, currentPosition.y + y);
+                } else if (currentPiece.color === 'dynamite') {
+                    explodeDynamite(currentPosition.x + x, currentPosition.y + y);
+                } else if (currentPiece.color === 'crossBomb') {
+                    explodeCrossBomb(currentPosition.x + x, currentPosition.y + y);
+                } else {
+                    board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
+                }
+            }
+        });
     });
-  });
-  checkAndExpandDoraemon(); // 新しく追加
+    checkAndExpandDoraemon();
 }
 
 function explodeBomb(bombX, bombY) {
@@ -129,34 +137,31 @@ function explodeDynamite(dynamiteX, dynamiteY) {
     animateExplosion(dynamiteX, dynamiteY, true);
 }
 
-function animateExplosion(centerX, centerY, isDynamite = false) {
+function animateExplosion(centerX, centerY, isCrossBomb = false) {
     const explosionFrames = ['💥', '🔥', '💨', '✨'];
     let frameIndex = 0;
-
     function drawExplosionFrame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawBoard();
-
         ctx.font = `${BLOCK_SIZE}px Arial`;
         ctx.fillText(explosionFrames[frameIndex], centerX * BLOCK_SIZE, (centerY + 1) * BLOCK_SIZE);
-
         frameIndex++;
-
         if (frameIndex < explosionFrames.length) {
             setTimeout(drawExplosionFrame, 100);
         } else {
-            const range = isDynamite ? 4 : 1;
-            for (let y = centerY - range; y <= centerY + range; y++) {
-                for (let x = centerX - range; x <= centerX + range; x++) {
-                    if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
-                        board[y][x] = 0;
+            if (!isCrossBomb) {
+                const range = isDynamite ? 4 : 1;
+                for (let y = centerY - range; y <= centerY + range; y++) {
+                    for (let x = centerX - range; x <= centerX + range; x++) {
+                        if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                            board[y][x] = 0;
+                        }
                     }
                 }
             }
             draw();
         }
     }
-
     drawExplosionFrame();
 }
 
@@ -299,6 +304,20 @@ function checkAndExpandDoraemon() {
       }
     }
   }
+}
+
+function explodeCrossBomb(bombX, bombY) {
+    animateExplosion(bombX, bombY, true);
+    
+    // 縦方向の消去
+    for (let y = 0; y < ROWS; y++) {
+        board[y][bombX] = 0;
+    }
+    
+    // 横方向の消去
+    for (let x = 0; x < COLS; x++) {
+        board[bombY][x] = 0;
+    }
 }
 
 document.getElementById('left-btn').addEventListener('click', () => {
