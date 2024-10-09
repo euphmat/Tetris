@@ -1,4 +1,4 @@
-const VERSION = 'v0.07';
+const VERSION = 'v0.08 爆弾実装';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
@@ -34,7 +34,10 @@ const GAME_SPEED = 300;
 const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
-    if (Math.random() < 0.1) {  // 30% の確率でドラえもんを生成
+    const random = Math.random();
+    if (random < 0.25) {  // 5% の確率で爆弾を生成
+        return { shape: [[1]], color: 'bomb' };
+    } else if (random < 0.35) {  // 30% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
@@ -49,6 +52,9 @@ function drawBoard() {
             if (value) {
                 if (value === 'doraemon') {
                     ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                } else if (value === 'bomb') {
+                    ctx.font = `${BLOCK_SIZE}px Arial`;
+                    ctx.fillText('💣', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
                 } else {
                     ctx.fillStyle = COLORS[value - 1];
                     ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -66,6 +72,9 @@ function drawPiece() {
             if (value) {
                 if (currentPiece.color === 'doraemon') {
                     ctx.drawImage(doraemonImg, (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                } else if (currentPiece.color === 'bomb') {
+                    ctx.font = `${BLOCK_SIZE}px Arial`;
+                    ctx.fillText('💣', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
                 } else {
                     ctx.fillStyle = currentPiece.color;
                     ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -81,10 +90,34 @@ function merge() {
     currentPiece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color === 'doraemon' ? 'doraemon' : COLORS.indexOf(currentPiece.color) + 1;
+                if (currentPiece.color === 'bomb') {
+                    explodeBomb(currentPosition.x + x, currentPosition.y + y);
+                } else {
+                    board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color === 'doraemon' ? 'doraemon' : COLORS.indexOf(currentPiece.color) + 1;
+                }
             }
         });
     });
+}
+
+function explodeBomb(bombX, bombY) {
+    // 爆発エフェクトを表示
+    ctx.font = `${BLOCK_SIZE}px Arial`;
+    ctx.fillText('💥', bombX * BLOCK_SIZE, (bombY + 1) * BLOCK_SIZE);
+
+    // 周囲3x3マスのブロックを削除
+    for (let y = bombY - 1; y <= bombY + 1; y++) {
+        for (let x = bombX - 1; x <= bombX + 1; x++) {
+            if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                board[y][x] = 0;
+            }
+        }
+    }
+
+    // 爆発エフェクトを一時的に表示
+    setTimeout(() => {
+        draw();
+    }, 200);
 }
 
 function isValidMove(piece, position) {
@@ -122,7 +155,9 @@ function rotate(piece) {
 function update() {
     if (!isValidMove(currentPiece, {x: currentPosition.x, y: currentPosition.y + 1})) {
         merge();
-        clearLines();
+        if (currentPiece.color !== 'bomb') {
+            clearLines();
+        }
         currentPiece = createPiece();
         currentPosition = {x: Math.floor(COLS / 2) - 1, y: 0};
         if (!isValidMove(currentPiece, currentPosition)) {
@@ -181,6 +216,45 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
         draw();
     }
 });
+
+function explodeBomb(bombX, bombY) {
+    animateExplosion(bombX, bombY);
+}
+
+function animateExplosion(bombX, bombY) {
+    const explosionFrames = ['💥', '🔥', '💨', '✨'];
+    let frameIndex = 0;
+
+    function drawExplosionFrame() {
+        // クリアして再描画
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+
+        // 爆発エフェクトを描画
+        ctx.font = `${BLOCK_SIZE}px Arial`;
+        ctx.fillText(explosionFrames[frameIndex], bombX * BLOCK_SIZE, (bombY + 1) * BLOCK_SIZE);
+
+        frameIndex++;
+
+        if (frameIndex < explosionFrames.length) {
+            // 次のフレームをアニメーション
+            setTimeout(drawExplosionFrame, 100);
+        } else {
+            // アニメーション終了後、ブロックを削除
+            for (let y = bombY - 1; y <= bombY + 1; y++) {
+                for (let x = bombX - 1; x <= bombX + 1; x++) {
+                    if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                        board[y][x] = 0;
+                    }
+                }
+            }
+            // 最終的な状態を描画
+            draw();
+        }
+    }
+
+    drawExplosionFrame();
+}
 
 window.onload = function() {
     document.getElementById('version').textContent = VERSION;
