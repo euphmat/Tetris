@@ -1,5 +1,6 @@
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
+const VERSION = 'v0.01';
 
 const ROWS = 20;
 const COLS = 10;
@@ -17,6 +18,10 @@ const SHAPES = [
     [[1, 1, 0], [0, 1, 1]],
     [[0, 1, 1], [1, 1, 0]]
 ];
+
+window.onload = function() {
+    document.getElementById('version').textContent = VERSION;
+};
 
 const COLORS = [
     '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF',

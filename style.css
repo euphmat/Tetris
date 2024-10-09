@@ -39,3 +39,9 @@ button {
 button:active {
     background-color: #45a049;
 }
+
+#version {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
