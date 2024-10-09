@@ -1,3 +1,6 @@
+*{
+    touch-action: manipulation;
+}
 body {
     margin: 0;
     padding: 0;
@@ -8,6 +11,7 @@ body {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     font-family: 'Arial', sans-serif;
     color: #e94560;
+    touch-action: manipulation;
 }
 
 #game-container {
