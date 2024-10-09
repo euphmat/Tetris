@@ -1,4 +1,4 @@
-const VERSION = 'v0.04 ドラえもん削除';
+const VERSION = 'v0.05';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
