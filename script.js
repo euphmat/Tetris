@@ -29,7 +29,7 @@ let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 let currentPiece = null;
 let currentPosition = {x: 0, y: 0};
 let gameInterval = null;
-const GAME_SPEED = 500;
+const GAME_SPEED = 300;
 
 const doraemonImg = document.getElementById('doraemon');
 
