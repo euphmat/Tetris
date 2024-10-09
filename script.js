@@ -183,8 +183,22 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
     update();
 });
 
-startScreen.addEventListener('click', startGame);
-retryBtn.addEventListener('click', startGame);
+// タッチデバイス対応のイベントリスナーを追加
+function addTouchStartListener(element, callback) {
+    element.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        callback();
+    });
+    element.addEventListener('click', callback);
+}
+
+addTouchStartListener(startScreen, startGame);
+addTouchStartListener(retryBtn, startGame);
+
+// ダブルタップによるズームを防止
+document.addEventListener('touchend', (e) => {
+    e.preventDefault();
+}, { passive: false });
 
 // 初期表示
 update();
