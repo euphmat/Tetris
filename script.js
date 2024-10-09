@@ -34,7 +34,7 @@ const GAME_SPEED = 300;
 const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
-    if (Math.random() < 0.9) {  // 30% の確率でドラえもんを生成
+    if (Math.random() < 0.1) {  // 30% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
     }
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
