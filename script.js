@@ -1,4 +1,4 @@
-const VERSION = 'v0.13 ドラえもんを 2x2 配置すると何かが起こる + 十文字爆弾追加';
+const VERSION = 'v0.13 十文字爆弾追加';
 
 const canvas = document.getElementById('tetris-canvas');
 const crossBombImg = document.getElementById('crossBomb');
