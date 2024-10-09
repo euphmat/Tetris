@@ -1,4 +1,4 @@
-const VERSION = 'v0.02';
+const VERSION = 'v0.03';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
@@ -29,7 +29,7 @@ let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 let currentPiece = null;
 let currentPosition = {x: 0, y: 0};
 let gameInterval = null;
-const GAME_SPEED = 1000;
+const GAME_SPEED = 100;
 
 const doraemonImg = document.getElementById('doraemon');
 
