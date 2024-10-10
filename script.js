@@ -40,11 +40,11 @@ function createPiece() {
         return { shape: [[1]], color: 'dynamite' };
     } else if (random < 0.06) { // 5% の確率で爆弾を生成
         return { shape: [[1]], color: 'bomb' };
-    } else if (random < 0.14) { // 8% の確率でダイヤモンドを生成
+    } else if (random < 0.04) { // 8% の確率でダイヤモンドを生成
         return { shape: [[1]], color: 'diamond' };
-    } else if (random < 0.19) { // 5% の確率でドラえもんを生成
+    } else if (random < 0.10) { // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
-    } else if (random < 0.24) { // 5% の確率で十文字爆弾を生成
+    } else if (random < 0.04) { // 5% の確率で十文字爆弾を生成
         return { shape: [[1]], color: 'crossBomb' };
     }
 
