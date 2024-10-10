@@ -35,11 +35,11 @@ const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
     const random = Math.random();
-    if (random < 0.05) {
+    if (random < 0.01) {
         return { shape: [[1]], color: 'dynamite' };
-    } else if (random < 0.10) {
+    } else if (random < 0.05) {
         return { shape: [[1]], color: 'bomb' };
-    } else if (random < 0.10) {
+    } else if (random < 0.02) {
         return { shape: [[1]], color: 'diamond' };
     } else if (random < 0.10) {
         return { shape: [[1]], color: 'doraemon' };
