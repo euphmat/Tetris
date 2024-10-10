@@ -36,15 +36,15 @@ const doraemonImg = document.getElementById('doraemon');
 
 function createPiece() {
     const random = Math.random();
-    if (random < 0.01) { // 1% の確率でダイナマイトを生成
+    if (random < 0.10) { // 1% の確率でダイナマイトを生成
         return { shape: [[1]], color: 'dynamite' };
-    } else if (random < 0.06) { // 5% の確率で爆弾を生成
+    } else if (random < 0.10) { // 5% の確率で爆弾を生成
         return { shape: [[1]], color: 'bomb' };
-    } else if (random < 0.04) { // 8% の確率でダイヤモンドを生成
+    } else if (random < 0.10) { // 8% の確率でダイヤモンドを生成
         return { shape: [[1]], color: 'diamond' };
     } else if (random < 0.10) { // 5% の確率でドラえもんを生成
         return { shape: [[1]], color: 'doraemon' };
-    } else if (random < 0.04) { // 5% の確率で十文字爆弾を生成
+    } else if (random < 0.10) { // 5% の確率で十文字爆弾を生成
         return { shape: [[1]], color: 'crossBomb' };
     }
 
@@ -130,7 +130,16 @@ function merge() {
 }
 
 function explodeBomb(bombX, bombY) {
-    animateExplosion(bombX, bombY);
+    animateExplosion(bombX, bombY, false);
+    
+    // 爆弾の周囲1マスのブロックを消去
+    for (let y = bombY - 1; y <= bombY + 1; y++) {
+        for (let x = bombX - 1; x <= bombX + 1; x++) {
+            if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                board[y][x] = 0;
+            }
+        }
+    }
 }
 
 function explodeDynamite(dynamiteX, dynamiteY) {
@@ -149,8 +158,11 @@ function animateExplosion(centerX, centerY, isCrossBomb = false) {
         if (frameIndex < explosionFrames.length) {
             setTimeout(drawExplosionFrame, 100);
         } else {
-            if (!isCrossBomb) {
-                const range = isDynamite ? 4 : 1;
+            if (isCrossBomb) {
+                // 十字爆弾の処理（既存のコード）
+            } else {
+                // 通常の爆弾の処理
+                const range = 1;  // 爆弾の範囲
                 for (let y = centerY - range; y <= centerY + range; y++) {
                     for (let x = centerX - range; x <= centerX + range; x++) {
                         if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
