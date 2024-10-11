@@ -1,4 +1,4 @@
-const VERSION = 'v0.12 ドラえもんを 4x4 配置すると何かが起こる';
+const VERSION = 'v0.13 ドラえもんを 4x4 配置すると何かが起こる';
 
 const canvas = document.getElementById('tetris-canvas');
 const ctx = canvas.getContext('2d');
@@ -44,6 +44,7 @@ function createPiece() {
     } else if (random < 0.18) {
         return { shape: [[1]], color: 'doraemon' };
     }
+
     const shapeIndex = Math.floor(Math.random() * SHAPES.length);
     const color = COLORS[shapeIndex];
     const shape = SHAPES[shapeIndex];
@@ -51,74 +52,57 @@ function createPiece() {
 }
 
 function drawBoard() {
-  board.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value) {
-        if (value === 'doraemon') {
-          ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-        } else if (value === 'bigDoraemon') {
-          ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE * 2, BLOCK_SIZE * 2);
-        } else if (value === 'bomb') {
-          ctx.font = `${BLOCK_SIZE}px Arial`;
-          ctx.fillText('💣', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-        } else if (value === 'diamond') {
-          ctx.font = `${BLOCK_SIZE}px Arial`;
-          ctx.fillText('💎', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-        } else if (value === 'dynamite') {
-          ctx.font = `${BLOCK_SIZE}px Arial`;
-          ctx.fillText('🧨', x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
-        } else {
-          ctx.fillStyle = value;
-          ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-          ctx.strokeStyle = '#000';
-          ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-        }
-      }
+    board.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value) {
+                drawBlock(x, y, value);
+            }
+        });
     });
-  });
 }
 
 function drawPiece() {
     currentPiece.shape.forEach((row, y) => {
         row.forEach((value, x) => {
             if (value) {
-                if (currentPiece.color === 'doraemon') {
-                    ctx.drawImage(doraemonImg, (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                } else if (currentPiece.color === 'bomb') {
-                    ctx.font = `${BLOCK_SIZE}px Arial`;
-                    ctx.fillText('💣', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
-                } else if (currentPiece.color === 'diamond') {
-                    ctx.font = `${BLOCK_SIZE}px Arial`;
-                    ctx.fillText('💎', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
-                } else if (currentPiece.color === 'dynamite') {
-                    ctx.font = `${BLOCK_SIZE}px Arial`;
-                    ctx.fillText('🧨', (currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y + 1) * BLOCK_SIZE);
-                } else {
-                    ctx.fillStyle = currentPiece.color;
-                    ctx.fillRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                    ctx.strokeStyle = '#000';
-                    ctx.strokeRect((currentPosition.x + x) * BLOCK_SIZE, (currentPosition.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-                }
+                drawBlock(currentPosition.x + x, currentPosition.y + y, currentPiece.color);
             }
         });
     });
 }
 
+function drawBlock(x, y, value) {
+    if (value === 'doraemon') {
+        ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    } else if (value === 'bigDoraemon') {
+        ctx.drawImage(doraemonImg, x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE * 2, BLOCK_SIZE * 2);
+    } else if (['bomb', 'diamond', 'dynamite'].includes(value)) {
+        ctx.font = `${BLOCK_SIZE}px Arial`;
+        const emoji = value === 'bomb' ? '💣' : value === 'diamond' ? '💎' : '🧨';
+        ctx.fillText(emoji, x * BLOCK_SIZE, (y + 1) * BLOCK_SIZE);
+    } else {
+        ctx.fillStyle = value;
+        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        ctx.strokeStyle = '#000';
+        ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    }
+}
+
 function merge() {
-  currentPiece.shape.forEach((row, y) => {
-    row.forEach((value, x) => {
-      if (value) {
-        if (currentPiece.color === 'bomb') {
-          explodeBomb(currentPosition.x + x, currentPosition.y + y);
-        } else if (currentPiece.color === 'dynamite') {
-          explodeDynamite(currentPosition.x + x, currentPosition.y + y);
-        } else {
-          board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
-        }
-      }
+    currentPiece.shape.forEach((row, y) => {
+        row.forEach((value, x) => {
+            if (value) {
+                if (currentPiece.color === 'bomb') {
+                    explodeBomb(currentPosition.x + x, currentPosition.y + y);
+                } else if (currentPiece.color === 'dynamite') {
+                    explodeDynamite(currentPosition.x + x, currentPosition.y + y);
+                } else {
+                    board[currentPosition.y + y][currentPosition.x + x] = currentPiece.color;
+                }
+            }
+        });
     });
-  });
-  checkAndExpandDoraemon(); // 新しく追加
+    checkAndExpandDoraemon();
 }
 
 function explodeBomb(bombX, bombY) {
@@ -136,12 +120,9 @@ function animateExplosion(centerX, centerY, isDynamite = false) {
     function drawExplosionFrame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawBoard();
-
         ctx.font = `${BLOCK_SIZE}px Arial`;
         ctx.fillText(explosionFrames[frameIndex], centerX * BLOCK_SIZE, (centerY + 1) * BLOCK_SIZE);
-
         frameIndex++;
-
         if (frameIndex < explosionFrames.length) {
             setTimeout(drawExplosionFrame, 100);
         } else {
@@ -174,23 +155,23 @@ function isValidMove(piece, position) {
 }
 
 function clearLines() {
-  let linesCleared = 0;
-  outer: for (let y = ROWS - 1; y >= 0; y--) {
-    for (let x = 0; x < COLS; x++) {
-      if (board[y][x] === 0 || board[y][x] === 'diamond' || board[y][x] === 'bigDoraemon') continue outer;
+    let linesCleared = 0;
+    outer: for (let y = ROWS - 1; y >= 0; y--) {
+        for (let x = 0; x < COLS; x++) {
+            if (board[y][x] === 0 || board[y][x] === 'diamond' || board[y][x] === 'bigDoraemon') continue outer;
+        }
+        const newRow = Array(COLS).fill(0);
+        for (let x = 0; x < COLS; x++) {
+            if (board[y][x] === 'diamond') {
+                newRow[x] = 'diamond';
+            }
+        }
+        board.splice(y, 1);
+        board.unshift(newRow);
+        linesCleared++;
+        y++;
     }
-    const newRow = Array(COLS).fill(0);
-    for (let x = 0; x < COLS; x++) {
-      if (board[y][x] === 'diamond') {
-        newRow[x] = 'diamond';
-      }
-    }
-    board.splice(y, 1);
-    board.unshift(newRow);
-    linesCleared++;
-    y++;
-  }
-  return linesCleared;
+    return linesCleared;
 }
 
 function rotate(piece) {
@@ -205,6 +186,7 @@ function rotate(piece) {
             color: piece.color
         };
     }
+
     let newShape = piece.shape[0].map((_, i) => piece.shape.map(row => row[i])).reverse();
     return { shape: newShape, color: piece.color };
 }
@@ -213,7 +195,6 @@ function tryRotate() {
     let rotated = rotate(currentPiece);
     let kick = 0;
     let maxKick = currentPiece.shape[0].length === 4 || currentPiece.shape.length === 4 ? 3 : 2;
-
     if (isValidMove(rotated, currentPosition)) {
         currentPiece = rotated;
         return;
@@ -225,6 +206,7 @@ function tryRotate() {
             currentPosition.x -= kick;
             return;
         }
+
         if (isValidMove(rotated, {x: currentPosition.x + kick, y: currentPosition.y})) {
             currentPiece = rotated;
             currentPosition.x += kick;
@@ -238,6 +220,7 @@ function tryRotate() {
             currentPosition.y -= 1;
             return;
         }
+
         if (isValidMove(rotated, {x: currentPosition.x, y: currentPosition.y - 2})) {
             currentPiece = rotated;
             currentPosition.y -= 2;
@@ -283,22 +266,22 @@ function startGame() {
 }
 
 function checkAndExpandDoraemon() {
-  for (let y = 0; y < ROWS - 1; y++) {
-    for (let x = 0; x < COLS - 1; x++) {
-      if (
-        board[y][x] === 'doraemon' &&
-        board[y][x + 1] === 'doraemon' &&
-        board[y + 1][x] === 'doraemon' &&
-        board[y + 1][x + 1] === 'doraemon'
-      ) {
-        // 2x2のドラえもンブロックを見つけた場合、拡大する
-        board[y][x] = 'bigDoraemon';
-        board[y][x + 1] = 0;
-        board[y + 1][x] = 0;
-        board[y + 1][x + 1] = 0;
-      }
+    for (let y = 0; y < ROWS - 1; y++) {
+        for (let x = 0; x < COLS - 1; x++) {
+            if (
+                board[y][x] === 'doraemon' &&
+                board[y][x + 1] === 'doraemon' &&
+                board[y + 1][x] === 'doraemon' &&
+                board[y + 1][x + 1] === 'doraemon'
+            ) {
+                // 2x2のドラえもンブロックを見つけた場合、拡大する
+                board[y][x] = 'bigDoraemon';
+                board[y][x + 1] = 0;
+                board[y + 1][x] = 0;
+                board[y + 1][x + 1] = 0;
+            }
+        }
     }
-  }
 }
 
 document.getElementById('left-btn').addEventListener('click', () => {
